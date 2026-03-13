@@ -8,10 +8,12 @@
   <meta name="theme-color" content="#d81b24" id="meta-theme-color">
   <title>專屬老黃曆 (雲端版)</title>
   
+  <!-- 引入 Material Icons & Symbols -->
+  <link href="https://fonts.googleapis.com/css2?family=Material+Icons+Outlined" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lunar-javascript/1.6.12/lunar.min.js"></script>
   
   <style>
-    /* --- CSS 變數：分為 A、B、C 三組主題色 --- */
     :root {
       --theme-bg: #8B5A2B;
       --theme-a: #0d47a1; 
@@ -31,7 +33,6 @@
     }
     input, textarea, select, .footer-info { -webkit-user-select: auto; user-select: auto; }
 
-    /* --- 主視圖區 --- */
     .main-view {
       flex: 1; display: flex; justify-content: center; align-items: flex-start; 
       padding: 15px; position: relative; cursor: grab; 
@@ -61,9 +62,7 @@
       border-bottom: 3px solid rgba(0,0,0,0.2); border-radius: 8px 8px 0 0; 
       position: relative; z-index: 10; flex-shrink: 0; 
     }
-    .header::after { display: none; }
-
-    /* ★ 重新設計：將頂部按鈕改為側邊垂直排列的面板 */
+    
     .header-side-panel {
       position: absolute; top: 15px; right: 15px;
       display: flex; flex-direction: column; align-items: center; gap: 6px;
@@ -72,14 +71,15 @@
       font-size: 24px; color: #ffffff; cursor: pointer; 
       text-shadow: none; transition: transform 0.2s, opacity 0.2s;
       opacity: 0.8; font-family: sans-serif; line-height: 1;
-    }
-    .header-icon-btn.logout-text {
-      font-size: 11px; font-weight: bold; padding: 2px 5px;
-      border: 1px solid rgba(255,255,255,0.7); border-radius: 4px;
-      letter-spacing: 1px; margin-right: -2px; /* 視覺微調對齊 */
+      display: flex; justify-content: center; align-items: center;
     }
     .header-icon-btn:hover { opacity: 1; }
     .header-icon-btn:active { transform: scale(0.8); }
+
+    /* ★ 新增：為雙層日曆紙打造的夾層容器 */
+    .paper-stack {
+      position: relative; flex: 1; display: flex; flex-direction: column;
+    }
 
     .paper { 
       padding: 15px; position: relative; border-radius: 0 0 8px 8px;
@@ -189,6 +189,7 @@
       text-align: center; padding: 6px 10px; font-size: 16px; font-weight: bold;
       letter-spacing: 2px; cursor: pointer; border-radius: 6px 6px 0 0;
       flex-shrink: 0; transition: opacity 0.2s; position: relative; z-index: 1; 
+      display: flex; justify-content: center; align-items: center;
     }
     .article-header-btn:active { opacity: 0.8; }
 
@@ -242,8 +243,9 @@
     .sync-status {
       position: absolute; top: 12px; left: 12px; z-index: 50; 
       font-size: 13px; color: rgba(255,255,255,0.9); font-weight: bold;
-      background: rgba(0,0,0,0.2); padding: 5px 10px; border-radius: 20px;
-      display: flex; align-items: center; gap: 4px; transition: opacity 0.5s; pointer-events: none; 
+      background: rgba(0,0,0,0.4); padding: 5px 10px; border-radius: 20px;
+      display: flex; align-items: center; transition: opacity 0.5s; pointer-events: none; 
+      font-family: sans-serif;
     }
 
     .anim-swipe-left { animation: swipeLeft 0.35s forwards ease-in; }
@@ -271,7 +273,7 @@
     .modal-title { font-size: 24px; margin-bottom: 20px; font-weight: bold; text-align: center; color: #333; }
     .form-group { margin-bottom: 15px; }
     .form-group label { display: block; margin-bottom: 8px; font-size: 18px; font-weight: bold; color: #555; }
-    .form-control { width: 100%; padding: 12px; font-size: 18px; border: 1px solid #ccc; border-radius: 8px; }
+    .form-control { width: 100%; padding: 12px; font-size: 18px; border: 1px solid #ccc; border-radius: 8px; font-family: sans-serif; }
     
     .color-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
     .color-row input[type="color"] { width: 45px; height: 45px; padding: 0; border: 2px solid #ccc; border-radius: 8px; cursor: pointer; }
@@ -279,41 +281,51 @@
     .color-row span { font-size: 16px; font-weight: bold; color: #333; }
 
     .modal-actions { display: flex; gap: 10px; margin-top: 25px; }
-    .modal-btn { flex: 1; padding: 15px; font-size: 20px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; }
+    .modal-btn { flex: 1; padding: 15px; font-size: 18px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; font-family: sans-serif; display: flex; justify-content: center; align-items: center; gap: 6px; }
     .btn-cancel { background: #e0e0e0; color: #333; }
     .btn-save { background: var(--theme-a); color: white; } 
 
-    /* ★ 新增：身分驗證大廳專屬樣式 */
     #auth-modal { z-index: 2000; background: rgba(0,0,0,0.85); }
     #auth-modal .modal-content { max-height: none; }
+    
+    .divider-text {
+      position: relative; text-align: center; margin: 25px 0 20px;
+    }
+    .divider-text::before {
+      content: ""; position: absolute; top: 50%; left: 0; right: 0; border-top: 1px solid #ddd; z-index: 1;
+    }
+    .divider-text span {
+      background: #fff; padding: 0 15px; color: #888; font-size: 14px; position: relative; z-index: 2;
+    }
   </style>
 </head>
 <body>
 
-  <!-- ★ 泛用版登入大廳 (預設顯示) -->
-  <div id="auth-modal" class="modal-overlay show">
+  <div id="auth-modal" class="modal-overlay">
     <div class="modal-content">
       <div class="modal-title">歡迎使用專屬老黃曆</div>
-      <p style="text-align:center; color:#666; margin-bottom: 20px; line-height: 1.5;">請登入您的專屬雲端帳號。<br>若帳號不存在，系統將為您自動建立。</p>
+      <p style="text-align:center; color:#666; margin-bottom: 25px; line-height: 1.5;">紀錄生活點滴，沉澱每日心境。</p>
+      
+      <button class="modal-btn" style="width:100%; background: var(--theme-a); color: white; margin-bottom: 10px; font-size: 18px;" onclick="window.performGuestAuth()">免登入試用 (公共展示區)</button>
+
+      <div class="divider-text">
+        <span>或使用專屬帳號</span>
+      </div>
+
       <div class="form-group">
-        <label>雲端帳號 (ID)</label>
-        <input type="text" id="auth-id" class="form-control" placeholder="請輸入英數字組合帳號">
+        <input type="text" id="auth-id" class="form-control" placeholder="帳號 (雲端 ID)">
       </div>
-      <div class="form-group">
-        <label>登入密碼</label>
-        <input type="password" id="auth-pwd" class="form-control" placeholder="請輸入密碼">
+      <div class="form-group" style="margin-bottom: 20px;">
+        <input type="password" id="auth-pwd" class="form-control" placeholder="登入密碼">
       </div>
-      <div class="modal-actions" style="flex-direction: column; gap: 12px; margin-top: 30px;">
-        <button class="modal-btn btn-save" onclick="window.performAuth()">登入 / 建立新帳號</button>
-        <button class="modal-btn" style="background: #f0f0f0; color: #555; font-size: 16px;" onclick="window.performGuestAuth()">免登入試用 (公共展示區)</button>
-      </div>
+      <button class="modal-btn" style="width:100%; background: #666; color: white; font-size: 16px;" onclick="window.performAuth()">登入 / 建立新帳號</button>
     </div>
   </div>
 
   <div class="main-view" id="touch-area">
     <div class="calendar-wrapper" id="calendar-card">
       
-      <div class="sync-status" id="sync-status">☁️ 準備連線...</div>
+      <div class="sync-status" id="sync-status"><span class="material-icons-outlined" style="font-size: 16px; margin-right: 4px;">cloud</span> 準備連線...</div>
 
       <div class="binding">
         <div class="hole"></div><div class="hole"></div><div class="hole"></div>
@@ -323,75 +335,87 @@
 
       <div class="header">
         <span id="display-title">平安喜樂</span>
-        <!-- ★ 套用新的側邊按鈕面板，加入登出功能 -->
         <div class="header-side-panel">
-          <div class="header-icon-btn" onclick="window.openSettings(); event.stopPropagation();" title="設定">⚙︎</div>
-          <div class="header-icon-btn logout-text" onclick="window.logout(); event.stopPropagation();" title="登出並切換帳號">登出</div>
+          <div class="header-icon-btn" onclick="window.openSettings(); event.stopPropagation();" title="設定">&#x2699;&#xFE0E;</div>
+          <div class="header-icon-btn" onclick="window.logout(); event.stopPropagation();" title="登出並切換帳號" style="margin-top: 4px;">
+            <span class="material-symbols-outlined" style="font-size: 26px;">person</span>
+          </div>
         </div>
       </div>
 
-      <div class="paper" id="paper-page">
-        <div class="top-info">
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <div style="position: relative; display: inline-flex; align-items: center;">
-              <span id="roc-year" style="border-bottom: 1px dashed var(--theme-a); padding-bottom: 2px; cursor: pointer;" title="點擊跳轉日期" onclick="window.toggleDateDropdown()">--年 ▾</span>
-              
-              <div class="date-dropdown" id="date-dropdown">
-                <select id="jump-year" onchange="window.updateDays()"></select>
-                <select id="jump-month" onchange="window.updateDays()"></select>
-                <select id="jump-day"></select>
-                <button class="btn-small-today" onclick="window.executeJump()">前往</button>
+      <!-- ★ 修改：將日曆紙包裝進雙層架構中 -->
+      <div class="paper-stack">
+        <!-- 底層紙張 (由 JS 動態生成與控制顯示) -->
+        <div class="paper" id="paper-back" style="position: absolute; inset: 0; z-index: 1; display: none; pointer-events: none; border: 1px solid rgba(0,0,0,0.05);">
+          <!-- 初始留空，由 JavaScript 在 init() 中動態複製表層 HTML -->
+        </div>
+        
+        <!-- 表層紙張 (使用者目前互動的頁面) -->
+        <div class="paper" id="paper-page" style="z-index: 2;">
+          <div class="top-info">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="position: relative; display: inline-flex; align-items: center;">
+                <span id="roc-year" style="border-bottom: 1px dashed var(--theme-a); padding-bottom: 2px; cursor: pointer;" title="點擊跳轉日期" onclick="window.toggleDateDropdown()">--年 ▾</span>
+                
+                <div class="date-dropdown" id="date-dropdown">
+                  <select id="jump-year" onchange="window.updateDays()"></select>
+                  <select id="jump-month" onchange="window.updateDays()"></select>
+                  <select id="jump-day"></select>
+                  <button class="btn-small-today" onclick="window.executeJump()">前往</button>
+                </div>
+              </div>
+              <button class="btn-small-today" id="btn-today-nav" onclick="window.goToToday()">回今日</button>
+            </div>
+            <div>
+              <span id="gregorian-year-month">西元----年-月</span>
+              <span id="lunar-year-text" style="margin-left: 5px;">歲次--</span>
+            </div>
+          </div>
+
+          <div class="main-grid">
+            <div class="left-lunar">
+              <div class="v-col">
+                <span class="lunar-badge">農曆</span>
+                <span id="lunar-date">--月--日</span>
               </div>
             </div>
-            <button class="btn-small-today" id="btn-today-nav" onclick="window.goToToday()">回今日</button>
-          </div>
-          <div>
-            <span id="gregorian-year-month">西元----年-月</span>
-            <span id="lunar-year-text" style="margin-left: 5px;">歲次--</span>
-          </div>
-        </div>
-
-        <div class="main-grid">
-          <div class="left-lunar">
-            <div class="v-col">
-              <span class="lunar-badge">農曆</span>
-              <span id="lunar-date">--月--日</span>
+            <div class="center-date">
+              <div class="big-number" id="gregorian-date">--</div>
+              <div class="weekday" id="weekday">星期-</div>
             </div>
-          </div>
-          <div class="center-date">
-            <div class="big-number" id="gregorian-date">--</div>
-            <div class="weekday" id="weekday">星期-</div>
-          </div>
-          <div class="right-solar">
-            <div class="v-col">
-              <span class="lunar-badge solar-badge">節氣</span>
-              <span id="solar-term">--</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="memo-box">
-          <div class="memo-title" onclick="window.toggleMemoEdit()" title="點擊切換編輯模式">備忘錄 ✎</div>
-          <div class="memo-content">
-            <div id="display-memo"></div>
-            <textarea id="edit-memo" style="display: none;"></textarea>
-          </div>
-          <div class="memo-almanac">
-            <div class="h-almanac-item"><span class="h-icon icon-yi">宜</span> <span id="almanac-yi" class="h-text">加載中</span></div>
-            <div class="h-almanac-item"><span class="h-icon icon-ji">忌</span> <span id="almanac-ji" class="h-text">加載中</span></div>
-          </div>
-        </div>
-
-        <div class="article-container">
-          <div class="article-header-btn" id="btn-article-edit" onclick="window.toggleArticleEdit()" title="點擊切換文章編輯模式">
-            靜心隨筆 ✎
-          </div>
-          <div class="footer-wrapper">
-            <div class="footer" id="article-footer">
-              <div class="reading-view-container" id="reading-scroll-area" onscroll="window.updateScrollHint()">
-                <div class="footer-info" id="display-footer">文章載入中...</div>
+            <div class="right-solar">
+              <div class="v-col">
+                <span class="lunar-badge solar-badge">節氣</span>
+                <span id="solar-term">--</span>
               </div>
-              <textarea id="edit-article" style="display: none;"></textarea>
+            </div>
+          </div>
+
+          <div class="memo-box">
+            <div class="memo-title" onclick="window.toggleMemoEdit()" title="點擊切換編輯模式">
+              備忘錄 <span class="material-symbols-outlined" style="font-size: 16px; margin-top: 4px;">edit</span>
+            </div>
+            <div class="memo-content">
+              <div id="display-memo"></div>
+              <textarea id="edit-memo" style="display: none;"></textarea>
+            </div>
+            <div class="memo-almanac">
+              <div class="h-almanac-item"><span class="h-icon icon-yi">宜</span> <span id="almanac-yi" class="h-text">加載中</span></div>
+              <div class="h-almanac-item"><span class="h-icon icon-ji">忌</span> <span id="almanac-ji" class="h-text">加載中</span></div>
+            </div>
+          </div>
+
+          <div class="article-container">
+            <div class="article-header-btn" id="btn-article-edit" onclick="window.toggleArticleEdit()" title="點擊切換文章編輯模式">
+              靜心隨筆 <span class="material-symbols-outlined" style="font-size: 18px; margin-left: 6px;">edit</span>
+            </div>
+            <div class="footer-wrapper">
+              <div class="footer" id="article-footer">
+                <div class="reading-view-container" id="reading-scroll-area" onscroll="window.updateScrollHint()">
+                  <div class="footer-info" id="display-footer">文章載入中...</div>
+                </div>
+                <textarea id="edit-article" style="display: none;"></textarea>
+              </div>
             </div>
           </div>
         </div>
@@ -417,7 +441,9 @@
           <input type="color" id="input-theme-c" value="#2e7d32">
           <span>C組 (節氣、宜忌)</span>
         </div>
-        <div id="guest-color-hint" style="font-size: 13px; color: #d81b24; margin-top: 5px; display: none; font-weight: bold;">🔒 試用者無法自訂配色</div>
+        <div id="guest-color-hint" style="font-size: 13px; color: #d81b24; margin-top: 5px; display: none; font-weight: bold;">
+          <span class="material-symbols-outlined" style="font-size: 14px; vertical-align: middle;">lock</span> 試用者無法自訂配色
+        </div>
       </div>
 
       <div class="form-group">
@@ -429,7 +455,6 @@
         <textarea id="input-footer" class="form-control" rows="3"></textarea>
       </div>
 
-      <!-- ★ 泛用版：帳號顯示 (已移除登出切換按鈕) -->
       <div class="form-group" style="border-top: 1px dashed #ccc; padding-top: 15px;">
         <label>目前登入帳號 (雲端 ID)</label>
         <div style="display: flex; gap: 8px;">
@@ -437,16 +462,16 @@
         </div>
       </div>
 
-      <!-- ★ 進階功能解鎖區 (正式用戶專用) -->
       <div class="form-group" id="unlock-section" style="display: none;">
-        <label style="color: #d81b24;">進階功能解鎖 🔒</label>
+        <label style="color: #d81b24;">進階功能解鎖 <span class="material-symbols-outlined" style="font-size: 16px; vertical-align: middle;">lock</span></label>
         <div style="display: flex; gap: 8px;">
           <input type="password" id="unlock-pwd" class="form-control" placeholder="請輸入登入密碼解鎖進階功能" style="padding: 8px; font-size: 14px; flex: 1;">
-          <button style="background: var(--theme-a); color: white; border: none; border-radius: 6px; padding: 0 15px; font-weight: bold; cursor: pointer; font-size: 14px; white-space: nowrap;" onclick="window.unlockAdvanced()">解鎖</button>
+          <button style="background: var(--theme-a); color: white; border: none; border-radius: 6px; padding: 0 15px; font-weight: bold; cursor: pointer; font-size: 14px; white-space: nowrap; display: flex; align-items: center; gap: 4px;" onclick="window.unlockAdvanced()">
+            <span class="material-symbols-outlined" style="font-size: 18px;">lock_open_right</span> 解鎖
+          </button>
         </div>
       </div>
 
-      <!-- ★ 修改解鎖密碼 (解鎖後顯示) -->
       <div class="form-group" id="password-management-area" style="display: none;">
         <label>修改帳號密碼</label>
         <div style="display: flex; flex-direction: column; gap: 8px;">
@@ -461,12 +486,15 @@
         </div>
       </div>
 
-      <!-- ★ 文本管理 -->
       <div class="form-group" id="text-management-area" style="border-top: 1px dashed #ccc; padding-top: 15px;">
         <label>文本管理與備份</label>
         <div style="display: flex; gap: 10px; flex-direction: column;">
-          <button id="btn-txt-upload" style="width: 100%; background: #ff9800; color: white; border: none; border-radius: 8px; padding: 12px; font-size: 16px; font-weight: bold; cursor: pointer;" onclick="document.getElementById('txt-uploader').click()">📄 從本機上傳文本檔 (.txt)</button>
-          <button id="btn-txt-export" style="width: 100%; background: #4caf50; color: white; border: none; border-radius: 8px; padding: 12px; font-size: 16px; font-weight: bold; cursor: pointer;" onclick="window.exportTextData()">📥 匯出雲端文本檔 (.txt)</button>
+          <button id="btn-txt-upload" style="width: 100%; background: #ff9800; color: white; border: none; border-radius: 8px; padding: 12px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;" onclick="document.getElementById('txt-uploader').click()">
+            <span class="material-icons-outlined">upload_file</span> 從本機上傳文本檔 (.txt)
+          </button>
+          <button id="btn-txt-export" style="width: 100%; background: #4caf50; color: white; border: none; border-radius: 8px; padding: 12px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;" onclick="window.exportTextData()">
+            <span class="material-icons-outlined">sim_card_download</span> 匯出雲端文本檔 (.txt)
+          </button>
         </div>
       </div>
 
@@ -496,7 +524,6 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
     
-    // ★ 全域變數初始化
     let userId = null; 
     let currentCloudPassword = null;
     let currentDate = new Date();
@@ -511,6 +538,9 @@
     let customArticles = {};
     let customMemos = {}; 
 
+    // ★ 系統圖示共用語法
+    const sysIcon = '<span class="material-icons-outlined" style="font-size: 16px; margin-right: 4px;">cloud</span>';
+
     function getDateKey(d) {
       return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
     }
@@ -518,39 +548,60 @@
     function updateSyncStatus(text, hideAfterMs = 0) {
       const el = document.getElementById('sync-status');
       if (!el) return;
-      el.innerText = text;
+      el.innerHTML = text; // 改為 innerHTML 以支援圖示渲染
       el.style.opacity = '1';
       if (hideAfterMs > 0) setTimeout(() => el.style.opacity = '0', hideAfterMs);
     }
 
-    // --- ★ 泛用版：核心身分驗證與載入機制 ---
+    function formatTextForDisplay(text, maxLineLength = 30) {
+      if (!text) return "";
+      const lines = text.split('\n');
+      const resultLines = [];
+      
+      for (let line of lines) {
+        if (line.length === 0) {
+          resultLines.push("");
+          continue;
+        }
+        let currentLine = "";
+        for (let i = 0; i < line.length; i++) {
+          currentLine += line[i];
+          if (currentLine.length === maxLineLength) {
+            resultLines.push(currentLine);
+            currentLine = "";
+          }
+        }
+        if (currentLine.length > 0) {
+          resultLines.push(currentLine);
+        }
+      }
+      return resultLines.join('\n');
+    }
+
     async function authenticateAndLoad(id, pwd) {
-      updateSyncStatus('☁️ 驗證帳號中...');
+      updateSyncStatus(`${sysIcon} 驗證帳號中...`);
       try {
         const settingsRef = doc(db, "users", id, "settings", "profile");
         const snap = await getDoc(settingsRef);
 
         if (snap.exists()) {
           const data = snap.data();
-          // 如果雲端有設定密碼，且與輸入不符
           if (data.password && data.password !== pwd) {
             updateSyncStatus('密碼錯誤', 2000);
             return false;
           }
         } else {
-          // 找不到帳號，直接為用戶建立新帳號與密碼
           appSettings.password = pwd;
           await setDoc(settingsRef, appSettings, { merge: true });
         }
 
-        // 登入成功：設定全域變數並寫入快取
         userId = id;
         currentCloudPassword = pwd;
         localStorage.setItem('calendar_auth_id', id);
         localStorage.setItem('calendar_auth_pwd', pwd);
         document.getElementById('display-uid').value = id;
 
-        await fetchCloudData(); // 獲取該帳號的所有日記
+        await fetchCloudData(); 
         document.getElementById('auth-modal').classList.remove('show');
         return true;
       } catch (error) {
@@ -567,7 +618,7 @@
       
       const success = await authenticateAndLoad(id, pwd);
       if(!success) {
-        alert("❌ 密碼錯誤！若這是新帳號，可能已有他人註冊此 ID。請換一個帳號或輸入正確密碼。");
+        alert("密碼錯誤！若這是新帳號，可能已有他人註冊此 ID。請換一個帳號或輸入正確密碼。");
       }
     };
 
@@ -579,38 +630,33 @@
     };
 
     window.logout = function() {
-      // ★ 移除瀏覽器原生的 confirm() 攔截，避免在預覽環境被阻擋卡死
-      // 1. 清除身分快取與本地資料
       localStorage.removeItem('calendar_auth_id');
       localStorage.removeItem('calendar_auth_pwd');
       localStorage.removeItem('calendarSettings');
       localStorage.removeItem('calendarArticles');
       localStorage.removeItem('calendarMemos');
       
-      // 2. 恢復記憶體變數為原廠預設狀態
       appSettings = { themeA: '#0d47a1', themeB: '#d81b24', themeC: '#2e7d32', title: '平安喜樂', footer: '無備忘錄', password: '' };
       customArticles = {};
       customMemos = {};
       userId = null;
       currentCloudPassword = null;
       
-      // 3. 更新畫面：套用預設設定、清空相關欄位、關閉設定視窗
       const uidEl = document.getElementById('display-uid');
       if (uidEl) uidEl.value = '';
       applySettings();
       window.closeSettings();
       
-      // 4. 強制喚起登入大廳並清空輸入框
       document.getElementById('auth-id').value = '';
       document.getElementById('auth-pwd').value = '';
       document.getElementById('auth-modal').classList.add('show');
       
-      updateSyncStatus('☁️ 待登入', 2000);
+      updateSyncStatus(`${sysIcon} 待登入`, 2000);
     };
 
     async function fetchCloudData() {
       if (!userId) return;
-      updateSyncStatus('☁️ 載入資料中...');
+      updateSyncStatus(`${sysIcon} 載入資料中...`);
       try {
         const settingsRef = doc(db, "users", userId, "settings", "profile");
         const articlesRef = doc(db, "users", userId, "data", "articles");
@@ -635,9 +681,9 @@
           localStorage.setItem('calendarMemos', JSON.stringify(customMemos));
           applySettings(); 
         }
-        updateSyncStatus('☁️ 已同步', 2000); 
+        updateSyncStatus(`${sysIcon} 已同步`, 2000); 
       } catch (error) {
-        updateSyncStatus('☁️ 同步失敗', 3000);
+        updateSyncStatus('同步失敗', 3000);
       }
     }
 
@@ -647,16 +693,16 @@
       localStorage.setItem('calendarMemos', JSON.stringify(customMemos)); 
 
       if (!userId) return;
-      updateSyncStatus('☁️ 儲存中...');
+      updateSyncStatus(`${sysIcon} 儲存中...`);
       try {
         await Promise.all([
           setDoc(doc(db, "users", userId, "settings", "profile"), appSettings, { merge: true }),
           setDoc(doc(db, "users", userId, "data", "articles"), { list: customArticles }),
           setDoc(doc(db, "users", userId, "data", "memos"), { list: customMemos })
         ]);
-        updateSyncStatus('☁️ 已儲存', 2000);
+        updateSyncStatus(`${sysIcon} 已儲存`, 2000);
       } catch (error) {
-        updateSyncStatus('☁️ 儲存失敗', 3000);
+        updateSyncStatus('儲存失敗', 3000);
       }
     }
 
@@ -664,15 +710,13 @@
       .then(() => {
         onAuthStateChanged(auth, (user) => {
           if (user) { 
-            // 系統連線成功後，檢查本地是否已有記憶的帳號密碼
             const cachedId = localStorage.getItem('calendar_auth_id');
             const cachedPwd = localStorage.getItem('calendar_auth_pwd');
             if (cachedId && cachedPwd) {
               authenticateAndLoad(cachedId, cachedPwd);
             } else {
-              // 若無快取，代表初次使用，顯示登入大廳
               document.getElementById('auth-modal').classList.add('show');
-              updateSyncStatus('☁️ 待登入', 2000);
+              updateSyncStatus(`${sysIcon} 待登入`, 2000);
             }
           } 
           else { signInAnonymously(auth); }
@@ -680,7 +724,7 @@
       })
       .catch((error) => console.error(error));
 
-    const s2tDict = {'动':'動','开':'開','仓':'倉','纳':'納','财':'財','扫':'掃','买':'買','卖':'賣','网':'網','猎':'獵','结':'結','发':'發','斋':'齋','筑':'築','庙':'廟','门':'门','坟':'墳','旧':'舊','养':'養','医':'醫','药':'藥','疗':'療','产':'產','妇':'婦','虫':'蟲','蚕':'蠶','树':'樹','种':'種','盖':'蓋','复':'復','见':'見','贵':'貴','过':'過','长':'長','马':'馬','车':'車','龙':'龍','凤':'鳳','鸟':'鳥','鸣':'鳴','会':'會','坛':'壇','头':'頭','钻':'鑽','余':'餘','殓':'殮','无':'無','启':'啟','辞':'辭','诸':'諸','罢':'罷','击':'擊','历':'歷','书':'書','报':'報','画':'畫','乐':'樂','务':'務','电':'電','视':'視','脑':'腦','机':'機','关':'關','闭':'閉','设':'設','计':'計','体':'體','惊':'驚','蛰':'蛰','针':'針','护':'護','丧':'喪','归':'歸','宁':'寧','进':'進','万':'萬','寿':'壽','极':'极','毕':'畢','业':'業','汇':'匯','贷':'貸','账':'賬','营':'營','购':'購','献':'獻','宝':'寶','悬':'懸','钟':'鐘','炉':'爐','创':'創','办':'辦','权':'權','证':'證','毁':'毁','断':'斷','积':'積','释':'釋','灵':'靈','醮':'醮','农':'農','栏':'欄','厩':'廄','飞':'飛','鱼':'魚','渔':'漁','亲':'親','绘':'繪','齐':'齊','酬':'酬','合':'合'};
+    const s2tDict = {'动':'動','开':'開','仓':'倉','纳':'納','财':'財','扫':'掃','买':'買','卖':'賣','网':'網','猎':'猎','结':'結','发':'發','斋':'齋','筑':'築','庙':'廟','门':'門','坟':'墳','旧':'舊','养':'養','医':'醫','药':'藥','疗':'療','产':'產','妇':'婦','虫':'蟲','蚕':'蠶','树':'樹','种':'種','盖':'蓋','复':'復','见':'見','贵':'貴','过':'過','长':'長','马':'馬','车':'車','龙':'龍','凤':'鳳','鸟':'鳥','鸣':'鳴','会':'會','坛':'壇','头':'頭','钻':'鑽','余':'餘','殓':'殮','无':'無','启':'啟','辞':'辭','诸':'諸','罢':'罷','击':'擊','历':'歷','书':'書','报':'報','画':'畫','乐':'樂','务':'務','电':'電','视':'視','脑':'腦','机':'機','关':'關','闭':'閉','设':'設','计':'計','体':'體','惊':'驚','蛰':'蟄','针':'針','护':'護','丧':'喪','归':'歸','宁':'寧','进':'進','万':'萬','寿':'壽','极':'極','毕':'畢','业':'業','汇':'匯','贷':'貸','账':'賬','营':'營','购':'購','献':'獻','宝':'寶','悬':'懸','钟':'鐘','炉':'爐','创':'創','办':'辦','权':'權','证':'證','毁':'毀','断':'斷','积':'積','释':'釋','灵':'靈','醮':'醮','农':'農','栏':'欄','厩':'廄','飞':'飛','鱼':'魚','渔':'漁','亲':'親','绘':'繪','齐':'齊','酬':'酬','合':'合'};
     function toTC(str) { return str ? str.split('').map(c => s2tDict[c] || c).join('') : ''; }
 
     window.populateDropdowns = function() {
@@ -689,10 +733,10 @@
       const currentY = new Date().getFullYear();
       let yearOptions = '';
       for(let y = currentY - 30; y <= currentY + 30; y++) { yearOptions += `<option value="${y}">民國${y-1911}年</option>`; }
-      yearSel.innerHTML = yearOptions;
+      if (yearSel) yearSel.innerHTML = yearOptions;
       let monthOptions = '';
       for(let m = 1; m <= 12; m++) { monthOptions += `<option value="${m}">${m}月</option>`; }
-      monthSel.innerHTML = monthOptions;
+      if (monthSel) monthSel.innerHTML = monthOptions;
     };
     
     window.updateDays = function() {
@@ -703,8 +747,10 @@
       let dayOptions = '';
       for(let d = 1; d <= daysInMonth; d++) { dayOptions += `<option value="${d}">${d}日</option>`; }
       const currentSelectedDay = parseInt(daySel.value) || 1;
-      daySel.innerHTML = dayOptions;
-      daySel.value = currentSelectedDay <= daysInMonth ? currentSelectedDay : daysInMonth;
+      if (daySel) {
+        daySel.innerHTML = dayOptions;
+        daySel.value = currentSelectedDay <= daysInMonth ? currentSelectedDay : daysInMonth;
+      }
     };
 
     window.toggleDateDropdown = function() {
@@ -765,12 +811,14 @@
       const dateKey = getDateKey(currentDate);
       const displayEl = document.getElementById('display-memo');
       const editEl = document.getElementById('edit-memo');
+      const titleEl = document.querySelector('.memo-title');
       
       if (!isEditingMemo) {
         editEl.value = customMemos[dateKey] !== undefined ? customMemos[dateKey] : appSettings.footer;
         displayEl.style.display = 'none';
         editEl.style.display = 'block';
         setTimeout(() => window.autoResizeTextarea(editEl), 0); 
+        titleEl.innerHTML = '備忘錄 <span class="material-symbols-outlined" style="font-size: 16px; margin-top: 4px;">edit</span>'; 
         editEl.focus();
         isEditingMemo = true;
       } else {
@@ -782,6 +830,7 @@
         displayEl.innerText = customMemos[dateKey] !== undefined ? customMemos[dateKey] : appSettings.footer;
         editEl.style.display = 'none';
         displayEl.style.display = 'block';
+        titleEl.innerHTML = '備忘錄 <span class="material-symbols-outlined" style="font-size: 16px; margin-top: 4px;">edit</span>';
         isEditingMemo = false;
       }
     };
@@ -805,7 +854,7 @@
         editEl.style.display = 'block';
         setTimeout(() => window.autoResizeTextarea(editEl), 0); 
         
-        btnEl.innerText = '💾 儲存靜心隨筆';
+        btnEl.innerHTML = '靜心隨筆 <span class="material-symbols-outlined" style="font-size: 18px; margin-left: 6px;">edit</span>';
         editEl.focus();
         isEditingArticle = true;
       } else {
@@ -822,60 +871,193 @@
         editEl.style.display = 'none';
         scrollArea.style.display = 'block'; 
         
-        btnEl.innerText = '靜心隨筆 ✎';
+        btnEl.innerHTML = '靜心隨筆 <span class="material-symbols-outlined" style="font-size: 18px; margin-left: 6px;">edit</span>';
         isEditingArticle = false;
         
         renderCalendar(currentDate); 
       }
     };
 
-    window.autoResizeTextarea = function(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; };
+    // ★ 修改：強化自動調整高度邏輯，精準鎖定並追蹤游標，防止手機端畫面亂跳
+    window.autoResizeTextarea = function(el) { 
+      const oldHeight = el.offsetHeight;
+      const scrollPos = window.scrollY;
 
-    let touchStartX = 0, touchEndX = 0, touchStartY = 0, touchEndY = 0, isDragging = false;
-    function handleGesture() {
-      const deltaX = touchEndX - touchStartX;
-      const deltaY = touchEndY - touchStartY;
-      if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) { changeDay(deltaX < 0 ? -1 : 1); }
+      el.style.height = 'auto'; 
+      const newHeight = el.scrollHeight;
+      el.style.height = newHeight + 'px'; 
+
+      if (newHeight > oldHeight) {
+        window.scrollTo(0, scrollPos + (newHeight - oldHeight));
+      } else {
+        window.scrollTo(0, scrollPos);
+      }
+    };
+
+    // ==========================================
+    // ★ 全新升級：物理手勢即時跟隨拖曳引擎 (支援雙層透視)
+    // ==========================================
+    let dragStartX = 0, dragStartY = 0;
+    let currentDeltaX = 0;
+    let isDraggingPage = false;
+    let isHorizontalSwipe = false; 
+    let lastRenderedOffset = 0; // 記錄背景紙渲染的日期方向，避免重複運算
+
+    function startDrag(e, x, y) {
+      if (e.target.closest('#article-footer') || 
+          e.target.closest('.memo-content') || 
+          e.target.closest('button') || 
+          e.target.closest('.header') || 
+          e.target.closest('.date-dropdown') || 
+          e.target.closest('select')) return;
+      
+      if (isAnimating) return; 
+      
+      isDraggingPage = true;
+      isHorizontalSwipe = false;
+      dragStartX = x;
+      dragStartY = y;
+      currentDeltaX = 0;
+      lastRenderedOffset = 0;
+      
+      const paper = document.getElementById('paper-page');
+      paper.style.transition = 'none'; 
+      // 增加拖曳時的漂浮陰影，讓雙層立體感更強烈
+      paper.style.boxShadow = '-5px 15px 30px rgba(0,0,0,0.15)'; 
+    }
+
+    function moveDrag(e, x, y) {
+      if (!isDraggingPage) return;
+      
+      const deltaX = x - dragStartX;
+      const deltaY = y - dragStartY;
+
+      if (!isHorizontalSwipe) {
+        if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
+          if (Math.abs(deltaX) > Math.abs(deltaY)) {
+            isHorizontalSwipe = true; 
+            document.getElementById('paper-back').style.display = 'flex'; // 顯示底層紙張
+          } else {
+            cancelDrag(); 
+            return;
+          }
+        } else {
+          return; 
+        }
+      }
+
+      if (isHorizontalSwipe && e.cancelable) { e.preventDefault(); }
+
+      // 判斷滑動方向並即時渲染背景紙張 (只在方向改變時運算一次)
+      let newOffset = lastRenderedOffset;
+      if (deltaX > 2) newOffset = -1; // 往右滑 -> 顯示昨天
+      else if (deltaX < -2) newOffset = 1; // 往左滑 -> 顯示明天
+
+      if (newOffset !== 0 && newOffset !== lastRenderedOffset) {
+        const targetDateObj = new Date(currentDate);
+        targetDateObj.setDate(targetDateObj.getDate() + newOffset);
+        renderCalendar(targetDateObj, '-back'); // 將目標日期畫到背景層
+        lastRenderedOffset = newOffset;
+      }
+
+      currentDeltaX = deltaX;
+      const rotateDeg = deltaX * 0.03; 
+      const paper = document.getElementById('paper-page');
+      paper.style.transformOrigin = "bottom center";
+      paper.style.transform = `translateX(${deltaX}px) rotate(${rotateDeg}deg)`;
+    }
+
+    function endDrag() {
+      if (!isDraggingPage) return;
+      isDraggingPage = false;
+      
+      const paper = document.getElementById('paper-page');
+      const paperBack = document.getElementById('paper-back');
+      paper.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out';
+      
+      if (currentDeltaX > 80) {
+        swipeOutAndChangeDay(-1, 1);
+      } else if (currentDeltaX < -80) {
+        swipeOutAndChangeDay(1, -1);
+      } else {
+        paper.style.transform = `translateX(0px) rotate(0deg)`;
+        paper.style.boxShadow = 'none';
+        setTimeout(() => { if (!isDraggingPage) paperBack.style.display = 'none'; }, 300);
+      }
+      currentDeltaX = 0;
+    }
+
+    function cancelDrag() {
+      if (!isDraggingPage) return;
+      isDraggingPage = false;
+      const paper = document.getElementById('paper-page');
+      const paperBack = document.getElementById('paper-back');
+      paper.style.transition = 'transform 0.3s ease-out';
+      paper.style.transform = `translateX(0px) rotate(0deg)`;
+      paper.style.boxShadow = 'none';
+      setTimeout(() => { if (!isDraggingPage) paperBack.style.display = 'none'; }, 300);
+      currentDeltaX = 0;
+    }
+
+    function swipeOutAndChangeDay(dayOffset, directionMultiplier) {
+      if (isAnimating) return;
+      isAnimating = true;
+      window.forceSaveEdits(); 
+      
+      const paper = document.getElementById('paper-page');
+      const paperBack = document.getElementById('paper-back');
+      
+      const flyX = directionMultiplier * window.innerWidth * 1.2;
+      const flyRotate = directionMultiplier * 15;
+      
+      paper.style.transition = 'transform 0.4s ease-in, opacity 0.4s ease-in';
+      paper.style.transform = `translateX(${flyX}px) translateY(20px) rotate(${flyRotate}deg)`;
+      paper.style.opacity = '0';
+      
+      setTimeout(() => {
+        // 核心切換：將背景紙的日期正式變成「今天」
+        currentDate.setDate(currentDate.getDate() + dayOffset);
+        paperBack.style.display = 'none'; // 隱藏背景，交接給表層
+        renderCalendar(currentDate); // 重新繪製表層
+        
+        // 讓表層紙張瞬間歸位並淡入，達成無縫接軌
+        paper.style.transition = 'none';
+        paper.style.transform = 'translateX(0) translateY(0) rotate(0deg)';
+        paper.style.opacity = '1';
+        paper.style.boxShadow = 'none';
+        
+        isAnimating = false;
+        lastRenderedOffset = 0;
+      }, 400);
     }
 
     const touchArea = document.getElementById('touch-area');
     touchArea.addEventListener('touchstart', e => {
-      if (e.target.closest('#article-footer') || e.target.closest('.memo-content')) return;
-      touchStartX = e.changedTouches[0].screenX; touchStartY = e.changedTouches[0].screenY;
-    }, {passive: true});
-    touchArea.addEventListener('touchend', e => {
-      if (e.target.closest('#article-footer') || e.target.closest('.memo-content')) return;
-      touchEndX = e.changedTouches[0].screenX; touchEndY = e.changedTouches[0].screenY;
-      handleGesture();
-    }, {passive: true});
-    touchArea.addEventListener('mousedown', e => {
-      if (e.target.closest('#article-footer') || e.target.closest('button') || e.target.closest('.header') || e.target.closest('.memo-box') || e.target.closest('.date-dropdown') || e.target.closest('select')) return;
-      isDragging = true; touchStartX = e.screenX; touchStartY = e.screenY;
-    });
-    touchArea.addEventListener('mouseup', e => {
-      if (!isDragging || e.target.closest('#article-footer')) return;
-      isDragging = false; touchEndX = e.screenX; touchEndY = e.screenY; handleGesture();
-    });
-    touchArea.addEventListener('mouseleave', e => {
-      if (isDragging) { isDragging = false; touchEndX = e.screenX; touchEndY = e.screenY; handleGesture(); }
-    });
+      startDrag(e, e.touches[0].clientX, e.touches[0].clientY);
+    }, {passive: false});
 
-    function changeDay(offset) {
-      if (isAnimating) return;
+    touchArea.addEventListener('touchmove', e => {
+      if (isDraggingPage) moveDrag(e, e.touches[0].clientX, e.touches[0].clientY);
+    }, {passive: false});
+
+    touchArea.addEventListener('touchend', endDrag);
+    touchArea.addEventListener('touchcancel', cancelDrag);
+
+    // 註冊滑鼠事件 (支援電腦測試)
+    touchArea.addEventListener('mousedown', e => {
+      startDrag(e, e.clientX, e.clientY);
+    });
+    window.addEventListener('mousemove', e => {
+      if (isDraggingPage) moveDrag(e, e.clientX, e.clientY);
+    });
+    window.addEventListener('mouseup', endDrag);
+
+    // 替換舊的日期切換按鈕入口
+    window.goToToday = function() { 
       window.forceSaveEdits(); 
-      isAnimating = true;
-      const paper = document.getElementById('paper-page');
-      if (offset < 0) { paper.classList.add('anim-swipe-left'); } else { paper.classList.add('anim-swipe-right'); }
-      setTimeout(() => {
-        currentDate.setDate(currentDate.getDate() + offset);
-        renderCalendar(currentDate);
-        paper.classList.remove('anim-swipe-left', 'anim-swipe-right');
-        paper.classList.add('anim-fade-in');
-        setTimeout(() => { paper.classList.remove('anim-fade-in'); isAnimating = false; }, 300);
-      }, 350);
-    }
-    
-    window.goToToday = function() { window.forceSaveEdits(); currentDate = new Date(); renderCalendar(currentDate); };
+      currentDate = new Date(); 
+      renderCalendar(currentDate); 
+    };
 
     window.handleFileUpload = function(event) {
       const file = event.target.files[0];
@@ -976,6 +1158,14 @@
       const savedMemos = localStorage.getItem('calendarMemos');
       if (savedMemos) customMemos = JSON.parse(savedMemos);
 
+      // ★ 初始化時：動態複製表層 HTML 並賦予給背景紙張，以實現雙層渲染
+      const paperPage = document.getElementById('paper-page');
+      const paperBack = document.getElementById('paper-back');
+      // 將表層的內部 HTML 複製到底層，並移除最外層包含 'paper-page' 的 div
+      paperBack.innerHTML = paperPage.innerHTML;
+      // 為背景紙內的所有 ID 加上 '-back' 後綴，避免與表層衝突
+      paperBack.querySelectorAll('[id]').forEach(el => el.id += '-back');
+
       const editArticleEl = document.getElementById('edit-article');
       const editMemoEl = document.getElementById('edit-memo');
       if (editArticleEl) editArticleEl.addEventListener('input', function() { window.autoResizeTextarea(this); });
@@ -985,63 +1175,85 @@
       applySettings(); 
     }
 
-    function renderCalendar(dateObj) {
+    // ★ 修改：加入 target 參數，讓渲染器可以指定畫在表層還是底層
+    function renderCalendar(dateObj, suffix = '') {
       const year = dateObj.getFullYear(), month = dateObj.getMonth() + 1, date = dateObj.getDate();
       const day = dateObj.getDay(), weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
       const dateKey = getDateKey(dateObj);
 
+      const el = (id) => document.getElementById(id + suffix); // 輔助函式，自動加上後綴
+
       const todayDate = new Date();
       const isToday = (year === todayDate.getFullYear() && month === (todayDate.getMonth() + 1) && date === todayDate.getDate());
-      document.getElementById('btn-today-nav').style.display = isToday ? 'none' : 'flex';
+      const btnTodayNav = el('btn-today-nav');
+      if (btnTodayNav) btnTodayNav.style.display = isToday ? 'none' : 'flex';
 
-      document.getElementById('roc-year').innerText = `民國${year - 1911}年 ▾`;
-      document.getElementById('gregorian-year-month').innerText = `西元${year}年${month}月`;
-      document.getElementById('gregorian-date').innerText = date;
-      document.getElementById('weekday').innerText = weekdays[day];
+      const rocYearEl = el('roc-year');
+      if(rocYearEl) rocYearEl.innerText = `民國${year - 1911}年 ▾`;
+      
+      const gregorianYearMonthEl = el('gregorian-year-month');
+      if(gregorianYearMonthEl) gregorianYearMonthEl.innerText = `西元${year}年${month}月`;
+      
+      const gregorianDateEl = el('gregorian-date');
+      if(gregorianDateEl) gregorianDateEl.innerText = date;
+      
+      const weekdayEl = el('weekday');
+      if(weekdayEl) weekdayEl.innerText = weekdays[day];
 
       const lunar = Lunar.fromDate(dateObj);
       const yiArr = lunar.getDayYi().map(toTC);
       const jiArr = lunar.getDayJi().map(toTC);
-      document.getElementById('almanac-yi').innerText = yiArr.length > 0 ? yiArr.slice(0,3).join(' ') : '無';
-      document.getElementById('almanac-ji').innerText = jiArr.length > 0 ? jiArr.slice(0,3).join(' ') : '諸事不宜';
+      
+      const almanacYiEl = el('almanac-yi');
+      if(almanacYiEl) almanacYiEl.innerText = yiArr.length > 0 ? yiArr.slice(0,3).join(' ') : '無';
+      
+      const almanacJiEl = el('almanac-ji');
+      if(almanacJiEl) almanacJiEl.innerText = jiArr.length > 0 ? jiArr.slice(0,3).join(' ') : '諸事不宜';
       
       const currentJieQi = lunar.getPrevJieQi(true);
-      document.getElementById('solar-term').innerText = currentJieQi ? toTC(currentJieQi.getName()) : '--';
+      const solarTermEl = el('solar-term');
+      if(solarTermEl) solarTermEl.innerText = currentJieQi ? toTC(currentJieQi.getName()) : '--';
       
-      document.getElementById('lunar-year-text').innerText = `歲次${lunar.getYearInGanZhi()}`;
-      document.getElementById('lunar-date').innerText = `${lunar.getMonthInChinese()}月${lunar.getDayInChinese()}`;
+      const lunarYearTextEl = el('lunar-year-text');
+      if(lunarYearTextEl) lunarYearTextEl.innerText = `歲次${lunar.getYearInGanZhi()}`;
+      
+      const lunarDateEl = el('lunar-date');
+      if(lunarDateEl) lunarDateEl.innerText = `${lunar.getMonthInChinese()}月${lunar.getDayInChinese()}`;
 
-      if (!isEditingMemo) {
-        document.getElementById('display-memo').innerText = customMemos[dateKey] !== undefined ? customMemos[dateKey] : appSettings.footer;
+      // 背景層不考慮編輯狀態，一律顯示文字
+      if (!isEditingMemo || suffix === '-back') {
+        const memoEl = el('display-memo');
+        if (memoEl) memoEl.innerText = customMemos[dateKey] !== undefined ? customMemos[dateKey] : appSettings.footer;
       }
 
-      const footerEl = document.getElementById('display-footer');
-      if (customArticles[dateKey]) {
-        let text = `【${customArticles[dateKey].title}】`;
-        if (customArticles[dateKey].content) { text += `\n\n${customArticles[dateKey].content}`; }
-        footerEl.innerText = text;
-      } else {
-        const articleKeys = Object.keys(customArticles).sort((a, b) => b.localeCompare(a));
-        if (articleKeys.length > 0) {
-          // ★ 泛用化修改：將特定名稱改為通用的「靜心隨筆」
-          let tocHTML = `《 靜心隨筆 》目錄\n\n`;
-          let items = articleKeys.map(k => {
-            const y = k.substring(0, 4), m = parseInt(k.substring(4, 6), 10), d = parseInt(k.substring(6, 8), 10);
-            const title = customArticles[k].title || '無標題';
-            const safeTitle = title.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            return `<span class="toc-item" onclick="window.jumpToDiaryDate('${k}')">【${safeTitle}】${y}.${m}.${d}</span>`;
-          });
-          tocHTML += items.join('\n');
-          footerEl.innerHTML = tocHTML;
+      const footerEl = el('display-footer');
+      if (footerEl) {
+        if (customArticles[dateKey]) {
+          let text = `【${customArticles[dateKey].title}】`;
+          if (customArticles[dateKey].content) { text += `\n\n${customArticles[dateKey].content}`; }
+          footerEl.innerText = formatTextForDisplay(text, 30);
         } else {
-          // ★ 泛用化修改：移除「《 文美文集 》」預載字樣
-          footerEl.innerText = "點觸上方「靜心隨筆」可輸入文章，再點觸一次可儲存。\n開始您新一日的創作吧。";
+          const articleKeys = Object.keys(customArticles).sort((a, b) => b.localeCompare(a));
+          if (articleKeys.length > 0) {
+            let tocHTML = `《 靜心隨筆 》目錄\n\n`;
+            let items = articleKeys.map(k => {
+              const y = k.substring(0, 4), m = parseInt(k.substring(4, 6), 10), d = parseInt(k.substring(6, 8), 10);
+              const title = customArticles[k].title || '無標題';
+              const safeTitle = title.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+              return `<span class="toc-item" onclick="window.jumpToDiaryDate('${k}')">【${safeTitle}】${y}.${m}.${d}</span>`;
+            });
+            tocHTML += items.join('\n');
+            footerEl.innerHTML = tocHTML;
+          } else {
+            footerEl.innerText = formatTextForDisplay("點觸上方「靜心隨筆」可輸入文章，再點觸一次可儲存。\n開始您新一日的創作吧。", 30);
+          }
         }
       }
 
-      if (!isEditingArticle) {
+      // 只有表層需要處理文章水平捲軸的重置
+      if (!isEditingArticle && suffix === '') {
         requestAnimationFrame(() => {
-          const scrollArea = document.getElementById('reading-scroll-area');
+          const scrollArea = el('reading-scroll-area');
           if (scrollArea) { scrollArea.scrollLeft = 0; }
           setTimeout(window.updateScrollHint, 50); 
         });
@@ -1057,7 +1269,6 @@
       document.getElementById('input-theme-b').value = appSettings.themeB || '#d81b24';
       document.getElementById('input-theme-c').value = appSettings.themeC || '#2e7d32';
       
-      // ★ 試用者與正式用戶介面分化：鎖定配色
       document.getElementById('input-theme-a').disabled = isGuest;
       document.getElementById('input-theme-b').disabled = isGuest;
       document.getElementById('input-theme-c').disabled = isGuest;
@@ -1070,22 +1281,20 @@
       const btnExport = document.getElementById('btn-txt-export');
 
       if (isGuest) {
-        // 試用者模式：徹底隱藏密碼與解鎖區塊，鎖定文本按鈕
         unlockSection.style.display = 'none';
         pwdArea.style.display = 'none';
         txtArea.style.display = 'block';
         
         btnUpload.disabled = true;
         btnUpload.style.background = '#ccc';
-        btnUpload.innerText = '🔒 從本機上傳文本檔 (試用版鎖定)';
+        btnUpload.innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px;">lock</span> 從本機上傳文本檔 (試用版鎖定)';
         btnUpload.style.cursor = 'not-allowed';
         
         btnExport.disabled = true;
         btnExport.style.background = '#ccc';
-        btnExport.innerText = '🔒 匯出雲端文本檔 (試用版鎖定)';
+        btnExport.innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px;">lock</span> 匯出雲端文本檔 (試用版鎖定)';
         btnExport.style.cursor = 'not-allowed';
       } else {
-        // 正式用戶：每次開啟設定皆預設上鎖
         document.getElementById('unlock-pwd').value = '';
         unlockSection.style.display = 'block';
         pwdArea.style.display = 'none';
@@ -1093,12 +1302,12 @@
         
         btnUpload.disabled = false;
         btnUpload.style.background = '#ff9800';
-        btnUpload.innerText = '📄 從本機上傳文本檔 (.txt)';
+        btnUpload.innerHTML = '<span class="material-icons-outlined">upload_file</span> 從本機上傳文本檔 (.txt)';
         btnUpload.style.cursor = 'pointer';
         
         btnExport.disabled = false;
         btnExport.style.background = '#4caf50';
-        btnExport.innerText = '📥 匯出雲端文本檔 (.txt)';
+        btnExport.innerHTML = '<span class="material-icons-outlined">sim_card_download</span> 匯出雲端文本檔 (.txt)';
         btnExport.style.cursor = 'pointer';
       }
       
@@ -1107,7 +1316,6 @@
     
     window.closeSettings = function() { document.getElementById('settings-modal').classList.remove('show'); };
     
-    // ★ 新增：解鎖進階功能
     window.unlockAdvanced = function() {
       const pwd = document.getElementById('unlock-pwd').value;
       if (pwd === currentCloudPassword) {
@@ -1125,9 +1333,8 @@
       const oldPwd = oldPwdInput.value.trim();
       const newPwd = newPwdInput.value.trim();
       
-      // ★ 安全驗證：必須先輸入正確的舊密碼
       if (oldPwd !== currentCloudPassword) {
-        alert("❌ 舊密碼錯誤！無法更新密碼。");
+        alert("舊密碼錯誤！無法更新密碼。");
         return;
       }
       if (!newPwd) { 
@@ -1140,7 +1347,7 @@
       localStorage.setItem('calendar_auth_pwd', newPwd); 
       saveToCloud(); 
       
-      alert("✅ 密碼修改成功！未來登入請使用此新密碼。");
+      alert("密碼修改成功！未來登入請使用此新密碼。");
       oldPwdInput.value = '';
       newPwdInput.value = '';
     };
