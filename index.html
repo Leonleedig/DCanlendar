@@ -296,6 +296,7 @@
 </head>
 <body>
 
+  <!-- ★ 登入大廳：作為登入與帳號切換的入口 -->
   <div id="auth-modal" class="modal-overlay">
     <div class="modal-content">
       <div class="modal-title">歡迎使用專屬老黃曆</div>
@@ -314,6 +315,16 @@
         <input type="password" id="auth-pwd" class="form-control" placeholder="登入密碼">
       </div>
       <button class="modal-btn" style="width:100%; background: #666; color: white; font-size: 16px;" onclick="window.performAuth()">登入 / 建立新帳號</button>
+
+      <!-- ★ 新增：已登入狀態下才會顯示的進階帳號操作 (返回 / 登出) -->
+      <div id="auth-active-actions" style="display: none; margin-top: 15px; flex-direction: column; gap: 10px;">
+        <div class="divider-text" style="margin: 15px 0 10px;">
+          <span>目前的帳號操作</span>
+        </div>
+        <button class="modal-btn" style="width:100%; background: #e0e0e0; color: #333; font-size: 16px;" onclick="window.hideAuthModal()">返回原帳號</button>
+        <button class="modal-btn" style="width:100%; background: #d81b24; color: white; font-size: 16px;" onclick="window.performLogout()">登出並清除快取</button>
+      </div>
+
     </div>
   </div>
 
@@ -332,7 +343,8 @@
         <span id="display-title">平安喜樂</span>
         <div class="header-side-panel">
           <div class="header-icon-btn" onclick="window.openSettings(); event.stopPropagation();" title="設定">&#x2699;&#xFE0E;</div>
-          <div class="header-icon-btn" onclick="window.logout(); event.stopPropagation();" title="登出並切換帳號" style="margin-top: 4px;">
+          <!-- ★ 修改：按鈕不再直接登出，改為呼叫 Auth 登入大廳 -->
+          <div class="header-icon-btn" onclick="window.showAuthModal(); event.stopPropagation();" title="帳號登入與管理" style="margin-top: 4px;">
             <span class="material-symbols-outlined" style="font-size: 26px;">person</span>
           </div>
         </div>
@@ -570,6 +582,25 @@
       return resultLines.join('\n');
     }
 
+    // ★ 新增：控制 Auth 登入大廳顯示與隱藏
+    window.showAuthModal = function() {
+      document.getElementById('auth-id').value = '';
+      document.getElementById('auth-pwd').value = '';
+      
+      // 如果已經是登入狀態，顯示「返回」與「登出」按鈕區塊
+      if (userId) {
+        document.getElementById('auth-active-actions').style.display = 'flex';
+      } else {
+        document.getElementById('auth-active-actions').style.display = 'none';
+      }
+      
+      document.getElementById('auth-modal').classList.add('show');
+    };
+
+    window.hideAuthModal = function() {
+      document.getElementById('auth-modal').classList.remove('show');
+    };
+
     async function authenticateAndLoad(id, pwd) {
       updateSyncStatus(`${sysIcon} 驗證帳號中...`);
       try {
@@ -582,8 +613,15 @@
             updateSyncStatus('密碼錯誤', 2000);
             return false;
           }
-        } else {
-          appSettings.password = pwd;
+        }
+
+        // ★ 核心防呆：如果驗證成功，在抓取新資料前先清空本機變數，防止帳號切換時資料污染
+        appSettings = { themeA: '#0d47a1', themeB: '#d81b24', themeC: '#2e7d32', title: '平安喜樂', footer: '無備忘錄', password: pwd };
+        customArticles = {};
+        customMemos = {};
+
+        // 如果是全新註冊的帳號，直接寫入預設設定
+        if (!snap.exists()) {
           await setDoc(settingsRef, appSettings, { merge: true });
         }
 
@@ -594,7 +632,7 @@
         document.getElementById('display-uid').value = id;
 
         await fetchCloudData(); 
-        document.getElementById('auth-modal').classList.remove('show');
+        window.hideAuthModal();
         return true;
       } catch (error) {
         console.error("驗證失敗:", error);
@@ -621,7 +659,8 @@
       }
     };
 
-    window.logout = function() {
+    // ★ 修改：正式執行登出與清除紀錄的邏輯 (由 Auth Modal 內的新按鈕觸發)
+    window.performLogout = function() {
       localStorage.removeItem('calendar_auth_id');
       localStorage.removeItem('calendar_auth_pwd');
       localStorage.removeItem('calendarSettings');
@@ -639,11 +678,9 @@
       applySettings();
       window.closeSettings();
       
-      document.getElementById('auth-id').value = '';
-      document.getElementById('auth-pwd').value = '';
-      document.getElementById('auth-modal').classList.add('show');
-      
-      updateSyncStatus(`${sysIcon} 待登入`, 2000);
+      // 隱藏登出區塊，讓 Modal 保持等待新登入的狀態
+      document.getElementById('auth-active-actions').style.display = 'none';
+      updateSyncStatus(`${sysIcon} 已登出`, 2000);
     };
 
     async function fetchCloudData() {
@@ -707,7 +744,7 @@
             if (cachedId && cachedPwd) {
               authenticateAndLoad(cachedId, cachedPwd);
             } else {
-              document.getElementById('auth-modal').classList.add('show');
+              window.showAuthModal();
               updateSyncStatus(`${sysIcon} 待登入`, 2000);
             }
           } 
@@ -941,7 +978,6 @@
 
       // 判斷滑動方向並即時渲染背景紙張 (只在方向改變時運算一次)
       let newOffset = lastRenderedOffset;
-      // ★ 修正滑動方向判定邏輯：向右拉前往明天(+1)，向左拉回到昨天(-1)
       if (deltaX > 2) newOffset = 1; 
       else if (deltaX < -2) newOffset = -1; 
 
@@ -968,10 +1004,8 @@
       paper.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out';
       
       if (currentDeltaX > 80) {
-        // ★ 修正滑動換頁邏輯：向右飛出且天數+1
         swipeOutAndChangeDay(1, 1);
       } else if (currentDeltaX < -80) {
-        // ★ 修正滑動換頁邏輯：向左飛出且天數-1
         swipeOutAndChangeDay(-1, -1);
       } else {
         paper.style.transform = `translateX(0px) rotate(0deg)`;
