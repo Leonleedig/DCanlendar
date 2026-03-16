@@ -161,9 +161,9 @@
     .memo-content {
       padding: 10px; flex: 2; display: flex; align-items: center; position: relative;
     }
-    .memo-content div { font-size: 18px; font-weight: bold; color: #333; line-height: 1.5; white-space: pre-wrap; width: 100%; } 
+    .memo-content div { font-size: 16px; font-weight: bold; color: var(--theme-a); line-height: 1.5; white-space: pre-wrap; width: 100%; } 
     .memo-content textarea {
-      width: 100%; font-size: 16px; border: 1px solid var(--theme-a); 
+      width: 100%; font-size: 16px; font-weight: bold; color: var(--theme-a); border: 1px solid var(--theme-a); 
       border-radius: 4px; padding: 5px; resize: none; font-family: inherit;
       overflow: hidden; 
     }
@@ -183,14 +183,23 @@
     .article-container {
       display: flex; flex-direction: column; flex: 1; min-height: 0; margin-bottom: 5px;
     }
+    .article-header-bar {
+      background-color: var(--theme-b); border-radius: 6px 6px 0 0;
+      display: flex; position: relative; z-index: 1; align-items: center;
+      flex-shrink: 0;
+    }
     .article-header-btn {
-      background-color: var(--theme-b); color: white;
-      text-align: center; padding: 6px 10px; font-size: 16px; font-weight: bold;
-      letter-spacing: 2px; cursor: pointer; border-radius: 6px 6px 0 0;
-      flex-shrink: 0; transition: opacity 0.2s; position: relative; z-index: 1; 
+      color: white; flex: 1; text-align: center; padding: 6px 10px; font-size: 16px; font-weight: bold;
+      letter-spacing: 2px; cursor: pointer; transition: opacity 0.2s; 
       display: flex; justify-content: center; align-items: center;
     }
     .article-header-btn:active { opacity: 0.8; }
+    .article-today-btn {
+      position: absolute; right: 8px; color: white; cursor: pointer;
+      display: none; align-items: center; justify-content: center;
+      padding: 4px; opacity: 0.85; transition: opacity 0.2s;
+    }
+    .article-today-btn:active { opacity: 0.5; }
 
     .footer-wrapper { position: relative; flex: 1; display: block; min-height: 0; width: 100%; z-index: 2; }
     
@@ -411,8 +420,14 @@
           </div>
 
           <div class="article-container">
-            <div class="article-header-btn" id="btn-article-edit" onclick="window.toggleArticleEdit()" title="點擊切換文章編輯模式">
-              靜心隨筆 <span class="material-symbols-outlined" style="font-size: 18px; margin-left: 6px;">edit</span>
+            <div class="article-header-bar">
+              <div class="article-header-btn" id="btn-article-edit" onclick="window.toggleArticleEdit()" title="點擊切換文章編輯模式">
+                靜心隨筆 <span class="material-symbols-outlined" style="font-size: 18px; margin-left: 6px;">edit</span>
+              </div>
+              <div class="article-today-btn" id="btn-article-today" onclick="window.goToToday(); event.stopPropagation();" title="回今日">
+                <span style="font-size: 14px; font-weight: bold; letter-spacing: 1px; margin-right: 4px;">回今日</span>
+                <span class="material-symbols-outlined" style="font-size: 20px;">today</span>
+              </div>
             </div>
             <div class="footer-wrapper">
               <div class="footer" id="article-footer">
@@ -874,8 +889,13 @@
       if (!isEditingArticle) {
         let currentContent = "";
         if (customArticles[dateKey]) { 
-          currentContent = customArticles[dateKey].title;
-          if (customArticles[dateKey].content) { currentContent += '\n' + customArticles[dateKey].content; }
+          // ★ 修改：讀取時判斷有無獨立標題
+          if (customArticles[dateKey].title) {
+            currentContent = customArticles[dateKey].title;
+            if (customArticles[dateKey].content) { currentContent += '\n' + customArticles[dateKey].content; }
+          } else {
+            currentContent = customArticles[dateKey].content || "";
+          }
         }
         
         editEl.value = currentContent;
@@ -892,7 +912,32 @@
           delete customArticles[dateKey]; 
         } else {
           const lines = val.split('\n');
-          customArticles[dateKey] = { title: lines[0].trim(), content: lines.slice(1).join('\n').trim() };
+          // ★ 修改：跳過開頭空白行，尋找第一行文字
+          let firstNonEmptyIdx = -1;
+          for (let i = 0; i < lines.length; i++) {
+            if (lines[i].trim().length > 0) {
+              firstNonEmptyIdx = i;
+              break;
+            }
+          }
+          
+          if (firstNonEmptyIdx !== -1) {
+            const firstLine = lines[firstNonEmptyIdx].trim();
+            // 判斷第一行是否超過 20 字元
+            if (firstLine.length <= 20) {
+              customArticles[dateKey] = { 
+                title: firstLine, 
+                content: lines.slice(firstNonEmptyIdx + 1).join('\n').trim() 
+              };
+            } else {
+              customArticles[dateKey] = { 
+                title: "", // 空標題代表無標題文章
+                content: lines.slice(firstNonEmptyIdx).join('\n').trim() 
+              };
+            }
+          } else {
+            delete customArticles[dateKey];
+          }
         }
         
         saveToCloud();
@@ -978,8 +1023,8 @@
 
       // 判斷滑動方向並即時渲染背景紙張 (只在方向改變時運算一次)
       let newOffset = lastRenderedOffset;
-      if (deltaX > 2) newOffset = 1; 
-      else if (deltaX < -2) newOffset = -1; 
+      if (deltaX > 2) newOffset = -1; 
+      else if (deltaX < -2) newOffset = 1; 
 
       if (newOffset !== 0 && newOffset !== lastRenderedOffset) {
         const targetDateObj = new Date(currentDate);
@@ -1004,9 +1049,9 @@
       paper.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out';
       
       if (currentDeltaX > 80) {
-        swipeOutAndChangeDay(1, 1);
+        swipeOutAndChangeDay(-1, 1);
       } else if (currentDeltaX < -80) {
-        swipeOutAndChangeDay(-1, -1);
+        swipeOutAndChangeDay(1, -1);
       } else {
         paper.style.transform = `translateX(0px) rotate(0deg)`;
         paper.style.boxShadow = 'none';
@@ -1098,32 +1143,122 @@
     };
 
     function parseTextData(text, fileName) {
-      const regex = /【([^】]+)】-(\d{4})\.(\d{1,2})\.(\d{1,2})\.([A-Za-z]{2})-([\s\S]*?)(?=(?:【|$))/g;
-      let match, count = 0;
-      let touchedDates = new Set(); 
+      // ★ 修改：全新的正則與邏輯，以 yyyy.m.d 為界限進行斷片
+      const lines = text.split('\n');
+      let currentDayKey = null;
+      let currentDayLines = [];
+      const parsedData = {};
 
-      while ((match = regex.exec(text)) !== null) {
-        const title = match[1].trim(), year = match[2];
-        const month = match[3].padStart(2, '0'), day = match[4].padStart(2, '0');
-        const timeOfDay = match[5].toUpperCase(), content = match[6].trim();
-        const dateStr = `${year}${month}${day}`; 
-        
-        if (!touchedDates.has(dateStr)) {
-          customArticles[dateStr] = { title, content };
-          touchedDates.add(dateStr);
+      // 偵測日期行 (例如 2026.3.16)
+      const dateRegex = /(\d{4})\.(\d{1,2})\.(\d{1,2})/;
+
+      for(let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const match = line.match(dateRegex);
+        if (match) {
+          // 若遇到新的日期，把上一個日期的行數打包
+          if (currentDayKey && currentDayLines.length > 0) {
+             if (!parsedData[currentDayKey]) parsedData[currentDayKey] = [];
+             parsedData[currentDayKey].push(...currentDayLines);
+          }
+          const y = match[1], m = match[2].padStart(2, '0'), d = match[3].padStart(2, '0');
+          currentDayKey = `${y}${m}${d}`;
+          currentDayLines = [];
         } else {
-          customArticles[dateStr].content += `\n\n[${timeOfDay}]\n${content}`; 
+          // 將內容歸屬到當前的日期下
+          if (currentDayKey) {
+            currentDayLines.push(line);
+          }
         }
-        count++;
       }
-      
+      if (currentDayKey && currentDayLines.length > 0) {
+         if (!parsedData[currentDayKey]) parsedData[currentDayKey] = [];
+         parsedData[currentDayKey].push(...currentDayLines);
+      }
+
+      let count = 0;
+      let touchedDates = new Set();
+
+      for (const [dateStr, dLines] of Object.entries(parsedData)) {
+        let memoLines = [];
+        let articleLines = [];
+        let currentSection = 'article'; // 預設視為文章，兼容無標籤的自由文本
+
+        for(let line of dLines) {
+          // 過濾掉匯出時產生的分隔線與系統資訊
+          if (line.match(/^-{10,}/) || line.match(/^={10,}/) || line.includes('【雲端備份與安全資訊】') || line.includes('專屬帳號 ID：') || line.includes('解鎖密碼：')) continue;
+
+          // 判斷是否為備忘錄或文章的開頭
+          if (line.trim() === '備忘錄：') {
+            currentSection = 'memo';
+            continue;
+          } else if (line.trim() === '文章：') {
+            currentSection = 'article';
+            continue;
+          }
+
+          if (currentSection === 'memo') {
+            memoLines.push(line);
+          } else {
+            articleLines.push(line);
+          }
+        }
+
+        let memoStr = memoLines.join('\n').trim();
+        let articleStr = articleLines.join('\n').trim();
+
+        if (memoStr) {
+           customMemos[dateStr] = memoStr;
+           touchedDates.add(dateStr);
+        }
+
+        if (articleStr) {
+           const aLines = articleStr.split('\n');
+           let firstNonEmptyIdx = -1;
+           for (let i = 0; i < aLines.length; i++) {
+             if (aLines[i].trim().length > 0) {
+               firstNonEmptyIdx = i;
+               break;
+             }
+           }
+           
+           if (firstNonEmptyIdx !== -1) {
+             let firstLine = aLines[firstNonEmptyIdx].trim();
+             
+             // 為了兼容舊版匯出，若文章帶有【】則自動剝除並視為標題
+             let isExplicitTitle = false;
+             if (firstLine.startsWith('【') && firstLine.endsWith('】')) {
+               firstLine = firstLine.substring(1, firstLine.length - 1);
+               aLines[firstNonEmptyIdx] = firstLine;
+               isExplicitTitle = true;
+             }
+
+             // 應用 20 字元的標題長度規則
+             if (firstLine.length <= 20 || isExplicitTitle) {
+               customArticles[dateStr] = {
+                 title: firstLine,
+                 content: aLines.slice(firstNonEmptyIdx + 1).join('\n').trim()
+               };
+             } else {
+               customArticles[dateStr] = {
+                 title: "",
+                 content: aLines.slice(firstNonEmptyIdx).join('\n').trim()
+               };
+             }
+             touchedDates.add(dateStr);
+           }
+        }
+      }
+
+      count = touchedDates.size;
+
       if (count > 0) {
         appSettings.title = fileName || appSettings.title;
         saveToCloud();
-        alert(`解析成功！已載入 ${count} 段專屬文章並同步至雲端。\n（與 txt 檔案重複的日期已自動更新為最新內容）`);
+        alert(`解析成功！已載入 ${count} 天的日曆紀錄並同步至雲端。\n（與 txt 檔案重複的日期已自動更新為最新內容）`);
         renderCalendar(currentDate); 
       } else {
-        alert('找不到符合格式的文章！請檢查 txt 檔是否符合：\n【標題】-YYYY.M.D.AM-內容');
+        alert('找不到符合格式的文章！請確保文本內含有 yyyy.m.d 的日期分界。');
       }
     }
 
@@ -1138,9 +1273,15 @@
         const y = k.substring(0, 4), m = parseInt(k.substring(4, 6), 10), d = parseInt(k.substring(6, 8), 10);
         const memoText = customMemos[k] ? customMemos[k] : "";
         let articleText = "";
+        
+        // ★ 修改：輸出時判斷有無獨立標題
         if (customArticles[k]) {
-          articleText = `【${customArticles[k].title}】`;
-          if (customArticles[k].content) { articleText += `\n${customArticles[k].content}`; }
+          if (customArticles[k].title) {
+            articleText = `【${customArticles[k].title}】`;
+            if (customArticles[k].content) { articleText += `\n${customArticles[k].content}`; }
+          } else {
+            articleText = customArticles[k].content || "";
+          }
         }
 
         exportContent += `日期：${y}.${m}.${d}\n`;
@@ -1216,6 +1357,9 @@
       const btnTodayNav = el('btn-today-nav');
       if (btnTodayNav) btnTodayNav.style.display = isToday ? 'none' : 'flex';
 
+      const btnArticleToday = el('btn-article-today');
+      if (btnArticleToday) btnArticleToday.style.display = isToday ? 'none' : 'flex';
+
       const rocYearEl = el('roc-year');
       if(rocYearEl) rocYearEl.innerText = `民國${year - 1911}年 ▾`;
       
@@ -1257,8 +1401,14 @@
       const footerEl = el('display-footer');
       if (footerEl) {
         if (customArticles[dateKey]) {
-          let text = `【${customArticles[dateKey].title}】`;
-          if (customArticles[dateKey].content) { text += `\n\n${customArticles[dateKey].content}`; }
+          let text = "";
+          // ★ 修改：顯示時判斷有無獨立標題
+          if (customArticles[dateKey].title) {
+            text = `【${customArticles[dateKey].title}】`;
+            if (customArticles[dateKey].content) { text += `\n\n${customArticles[dateKey].content}`; }
+          } else {
+            text = customArticles[dateKey].content || "";
+          }
           footerEl.innerText = formatTextForDisplay(text, 30);
         } else {
           const articleKeys = Object.keys(customArticles).sort((a, b) => b.localeCompare(a));
@@ -1266,7 +1416,17 @@
             let tocHTML = `《 靜心隨筆 》目錄\n\n`;
             let items = articleKeys.map(k => {
               const y = k.substring(0, 4), m = parseInt(k.substring(4, 6), 10), d = parseInt(k.substring(6, 8), 10);
-              const title = customArticles[k].title || '無標題';
+              
+              // ★ 修改：目錄顯示時，若無標題則擷取內文前10字，並過濾括號
+              let title = customArticles[k].title;
+              if (!title) {
+                const content = customArticles[k].content || '';
+                const firstLine = content.split('\n').find(l => l.trim().length > 0) || '';
+                title = firstLine.replace(/[【】]/g, '').substring(0, 10);
+                if (firstLine.replace(/[【】]/g, '').length > 10) title += '...';
+              }
+              title = title || '無標題';
+              
               const safeTitle = title.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
               return `<span class="toc-item" onclick="window.jumpToDiaryDate('${k}')">【${safeTitle}】${y}.${m}.${d}</span>`;
             });
