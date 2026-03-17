@@ -338,6 +338,14 @@
     .color-row input[type="color"]:disabled { opacity: 0.5; cursor: not-allowed; border-color: #999; }
     .color-row span { font-size: 16px; font-weight: bold; color: #333; }
 
+    /* ★ 新增：開關切換樣式 */
+    .switch { position: relative; display: inline-block; width: 50px; height: 26px; flex-shrink: 0; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 26px; }
+    .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+    input:checked + .slider { background-color: var(--theme-a); }
+    input:checked + .slider:before { transform: translateX(24px); }
+
     .modal-actions { display: flex; gap: 10px; margin-top: 25px; }
     .modal-btn { flex: 1; padding: 15px; font-size: 18px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; font-family: sans-serif; display: flex; justify-content: center; align-items: center; gap: 6px; }
     .btn-cancel { background: #e0e0e0; color: #333; }
@@ -477,7 +485,7 @@
           <div class="top-info">
             <div style="display: flex; align-items: center; gap: 10px;">
               <div style="position: relative; display: inline-flex; align-items: center;">
-                <span id="roc-year" style="border-bottom: 1px dashed var(--theme-a); padding-bottom: 2px; cursor: pointer;" title="點擊跳轉日期" onclick="window.toggleDateDropdown()">--年 ▾</span>
+                <span id="roc-year" style="border-bottom: 1px dashed var(--theme-a); padding-bottom: 2px; cursor: pointer;" title="點擊跳轉日期" onclick="window.toggleDateDropdown()">--年 <span class="dropdown-arrow">▾</span></span>
                 
                 <div class="date-dropdown" id="date-dropdown">
                   <select id="jump-year" onchange="window.updateDays()"></select>
@@ -578,6 +586,20 @@
     <div class="modal-content">
       <div class="modal-title">日曆客製化設定</div>
       
+      <!-- ★ 新增：自動節氣配色開關 -->
+      <div class="form-group" style="margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border: 1px solid #ccc; padding: 12px; border-radius: 8px; background: #f9f9f9;">
+          <div>
+            <label style="margin: 0; font-size: 18px; font-weight: bold; color: #555;">自動節氣配色</label>
+            <div style="font-size: 13px; color: #888; margin-top: 4px;">依據當下時節，自動切換 24 節氣專屬主題色</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="input-auto-theme" onchange="window.toggleAutoTheme(this)">
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+
       <div class="form-group">
         <label>自訂配色</label>
         <div class="color-row">
@@ -684,7 +706,8 @@
     
     let appSettings = { 
       themeA: '#0d47a1', themeB: '#d81b24', themeC: '#2e7d32', 
-      title: '平安喜樂', footer: '無備忘錄', password: '' 
+      title: '平安喜樂', footer: '無備忘錄', password: '',
+      autoTheme: false /* ★ 新增設定：自動節氣配色 */
     };
     let customArticles = {};
     let customMemos = {}; 
@@ -1015,6 +1038,117 @@
     const s2tDict = {'动':'動','开':'開','仓':'倉','纳':'納','财':'財','扫':'掃','买':'買','卖':'賣','网':'網','猎':'猎','结':'結','发':'發','斋':'齋','筑':'築','庙':'廟','门':'門','坟':'墳','旧':'舊','养':'養','医':'醫','药':'藥','疗':'療','产':'產','妇':'婦','虫':'蟲','蚕':'蠶','树':'樹','种':'種','盖':'蓋','复':'復','见':'見','贵':'貴','过':'過','长':'長','马':'馬','车':'車','龙':'龍','凤':'鳳','鸟':'鳥','鸣':'鳴','会':'會','坛':'壇','头':'頭','钻':'鑽','余':'餘','殓':'殮','无':'無','启':'啟','辞':'辭','诸':'諸','罢':'罷','击':'擊','历':'歷','书':'書','报':'報','画':'畫','乐':'樂','务':'務','电':'電','视':'視','脑':'腦','机':'機','关':'關','闭':'閉','设':'設','计':'計','体':'體','惊':'驚','蛰':'蟄','针':'針','护':'護','丧':'喪','归':'歸','宁':'寧','进':'進','万':'萬','寿':'壽','极':'極','毕':'畢','业':'業','汇':'匯','贷':'貸','账':'賬','营':'營','购':'購','献':'獻','宝':'寶','悬':'懸','钟':'鐘','炉':'爐','创':'創','办':'辦','权':'權','证':'證','毁':'毀','断':'斷','积':'積','释':'釋','灵':'靈','醮':'醮','农':'農','栏':'欄','厩':'廄','飞':'飛','鱼':'魚','渔':'漁','亲':'親','绘':'繪','齐':'齊','酬':'酬','合':'合'};
     function toTC(str) { return str ? str.split('').map(c => s2tDict[c] || c).join('') : ''; }
 
+    // ★ 升級版：24節氣色碼庫 (改用物件格式，方便 O(1) 快速查找)
+    const solarTermsColors = {
+      "立春": { "A": "#5C8561", "B": "#C27289", "C": "#A1826A" },
+      "雨水": { "A": "#798A99", "B": "#599CA3", "C": "#DBA56E" },
+      "驚蟄": { "A": "#8F70B3", "B": "#C77579", "C": "#5E9E7A" },
+      "春分": { "A": "#72A366", "B": "#708EB8", "C": "#D6A665" },
+      "清明": { "A": "#779E83", "B": "#897C91", "C": "#6A86A1" },
+      "穀雨": { "A": "#BC6979", "B": "#9E8066", "C": "#67A185" },
+      "立夏": { "A": "#30A345", "B": "#D94555", "C": "#3793DE" },
+      "小滿": { "A": "#E0A919", "B": "#47B047", "C": "#E86333" },
+      "芒種": { "A": "#39B36E", "B": "#A13BA8", "C": "#E37236" },
+      "夏至": { "A": "#14B069", "B": "#D4559B", "C": "#F5A800" },
+      "小暑": { "A": "#55BA25", "B": "#6B7987", "C": "#E85B23" },
+      "大暑": { "A": "#1485E3", "B": "#E64343", "C": "#D9AB26" },
+      "立秋": { "A": "#A35917", "B": "#8F3023", "C": "#2E6287" },
+      "處暑": { "A": "#A67814", "B": "#5E2D5E", "C": "#545E63" },
+      "白露": { "A": "#7D6840", "B": "#1C697A", "C": "#40305E" },
+      "秋分": { "A": "#9C1D24", "B": "#A66B08", "C": "#1A4B75" },
+      "寒露": { "A": "#B54E0E", "B": "#11452D", "C": "#3D5C70" },
+      "霜降": { "A": "#73171F", "B": "#594231", "C": "#1D6373" },
+      "立冬": { "A": "#29292E", "B": "#5C663D", "C": "#99611A" },
+      "小雪": { "A": "#9C1C44", "B": "#162C4A", "C": "#536B78" },
+      "大雪": { "A": "#145445", "B": "#4B4C54", "C": "#1F2D6B" },
+      "冬至": { "A": "#1B1B1E", "B": "#4C235E", "C": "#A62E14" },
+      "小寒": { "A": "#1D666E", "B": "#4F3B33", "C": "#555D66" },
+      "大寒": { "A": "#134D3F", "B": "#454F5E", "C": "#6E3E67" }
+    };
+
+    // 16進位色碼轉 RGB 陣列
+    function hexToRgb(hex) {
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      return result ? [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)] : [0, 0, 0];
+    }
+
+    // RGB 陣列轉 16進位色碼
+    function rgbToHex(r, g, b) {
+      return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
+    }
+
+    // 線性插值運算 (Lerp) 計算漸層中間色
+    function lerpColor(color1, color2, factor) {
+      const c1 = hexToRgb(color1);
+      const c2 = hexToRgb(color2);
+      const r = Math.round(c1[0] + factor * (c2[0] - c1[0]));
+      const g = Math.round(c1[1] + factor * (c2[1] - c1[1]));
+      const b = Math.round(c1[2] + factor * (c2[2] - c1[2]));
+      return rgbToHex(r, g, b);
+    }
+
+    // ★ 升級版：獨立處理日曆顏色的漸層推算引擎
+    function getThemeForDate(dateObj) {
+      const lunar = Lunar.fromDate(dateObj);
+      const solar = lunar.getSolar();
+      
+      // 取得當前（或剛過去）的節氣與下一個即將到來的節氣
+      const prevJieQi = lunar.getPrevJieQi(true);
+      const nextJieQi = lunar.getNextJieQi(true);
+
+      // 轉換成繁體名稱以對應色碼庫
+      const prevName = toTC(prevJieQi.getName());
+      const nextName = toTC(nextJieQi.getName());
+
+      const color1 = solarTermsColors[prevName] || solarTermsColors["立春"];
+      const color2 = solarTermsColors[nextName] || solarTermsColors["雨水"];
+
+      // 取得精準的天數 (儒略日 Julian Day)
+      const prevJD = prevJieQi.getSolar().getJulianDay();
+      const nextJD = nextJieQi.getSolar().getJulianDay();
+      const currentJD = solar.getJulianDay();
+
+      // 計算時間進度百分比 (0 ~ 1)
+      let factor = 0;
+      if (nextJD > prevJD) {
+        factor = (currentJD - prevJD) / (nextJD - prevJD);
+      }
+      factor = Math.max(0, Math.min(1, factor)); // 確保安全範圍
+
+      // 回傳經過漸層計算後的三組新色碼
+      return {
+        A: lerpColor(color1.A, color2.A, factor),
+        B: lerpColor(color1.B, color2.B, factor),
+        C: lerpColor(color1.C, color2.C, factor)
+      };
+    }
+
+    function updateThemeForDate(dateObj) {
+      let themeA = appSettings.themeA || '#0d47a1';
+      let themeB = appSettings.themeB || '#d81b24';
+      let themeC = appSettings.themeC || '#2e7d32';
+
+      if (appSettings.autoTheme) {
+        const termTheme = getThemeForDate(dateObj);
+        themeA = termTheme.A;
+        themeB = termTheme.B;
+        themeC = termTheme.C;
+      }
+
+      document.documentElement.style.setProperty('--theme-a', themeA);
+      document.documentElement.style.setProperty('--theme-b', themeB);
+      document.documentElement.style.setProperty('--theme-c', themeC);
+      document.getElementById('meta-theme-color').content = themeB;
+      
+      // 若設定面板開啟中，同步更新調色盤顯示
+      const autoThemeInput = document.getElementById('input-auto-theme');
+      if (autoThemeInput && autoThemeInput.checked) {
+         document.getElementById('input-theme-a').value = themeA;
+         document.getElementById('input-theme-b').value = themeB;
+         document.getElementById('input-theme-c').value = themeC;
+      }
+    }
+
     window.populateDropdowns = function() {
       const yearSel = document.getElementById('jump-year');
       const monthSel = document.getElementById('jump-month');
@@ -1218,14 +1352,11 @@
       }
     };
 
-    // ==========================================
-    // ★ 全新升級：物理手勢即時跟隨拖曳引擎 (支援雙層透視)
-    // ==========================================
     let dragStartX = 0, dragStartY = 0;
     let currentDeltaX = 0;
     let isDraggingPage = false;
     let isHorizontalSwipe = false; 
-    let lastRenderedOffset = 0; // 記錄背景紙渲染的日期方向，避免重複運算
+    let lastRenderedOffset = 0; 
 
     function startDrag(e, x, y) {
       if (e.target.closest('#article-footer') || 
@@ -1246,7 +1377,6 @@
       
       const paper = document.getElementById('paper-page');
       paper.style.transition = 'none'; 
-      // 增加拖曳時的漂浮陰影，讓雙層立體感更強烈
       paper.style.boxShadow = '-5px 15px 30px rgba(0,0,0,0.15)'; 
     }
 
@@ -1260,7 +1390,7 @@
         if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
           if (Math.abs(deltaX) > Math.abs(deltaY)) {
             isHorizontalSwipe = true; 
-            document.getElementById('paper-back').style.display = 'flex'; // 顯示底層紙張
+            document.getElementById('paper-back').style.display = 'flex'; 
           } else {
             cancelDrag(); 
             return;
@@ -1272,16 +1402,14 @@
 
       if (isHorizontalSwipe && e.cancelable) { e.preventDefault(); }
 
-      // 判斷滑動方向並即時渲染背景紙張 (只在方向改變時運算一次)
       let newOffset = lastRenderedOffset;
-      // ★ 修改：向右拉前往明天(+1)，向左拉回到昨天(-1)
       if (deltaX > 2) newOffset = 1; 
       else if (deltaX < -2) newOffset = -1; 
 
       if (newOffset !== 0 && newOffset !== lastRenderedOffset) {
         const targetDateObj = new Date(currentDate);
         targetDateObj.setDate(targetDateObj.getDate() + newOffset);
-        renderCalendar(targetDateObj, '-back'); // 將目標日期畫到背景層
+        renderCalendar(targetDateObj, '-back'); 
         lastRenderedOffset = newOffset;
       }
 
@@ -1301,10 +1429,8 @@
       paper.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out';
       
       if (currentDeltaX > 80) {
-        // ★ 修改：向右飛出且天數+1
         swipeOutAndChangeDay(1, 1);
       } else if (currentDeltaX < -80) {
-        // ★ 修改：向左飛出且天數-1
         swipeOutAndChangeDay(-1, -1);
       } else {
         paper.style.transform = `translateX(0px) rotate(0deg)`;
@@ -1342,12 +1468,10 @@
       paper.style.opacity = '0';
       
       setTimeout(() => {
-        // 核心切換：將背景紙的日期正式變成「今天」
         currentDate.setDate(currentDate.getDate() + dayOffset);
-        paperBack.style.display = 'none'; // 隱藏背景，交接給表層
-        renderCalendar(currentDate); // 重新繪製表層
+        paperBack.style.display = 'none'; 
+        renderCalendar(currentDate); 
         
-        // 讓表層紙張瞬間歸位並淡入，達成無縫接軌
         paper.style.transition = 'none';
         paper.style.transform = 'translateX(0) translateY(0) rotate(0deg)';
         paper.style.opacity = '1';
@@ -1370,7 +1494,6 @@
     touchArea.addEventListener('touchend', endDrag);
     touchArea.addEventListener('touchcancel', cancelDrag);
 
-    // 註冊滑鼠事件 (支援電腦測試)
     touchArea.addEventListener('mousedown', e => {
       startDrag(e, e.clientX, e.clientY);
     });
@@ -1379,7 +1502,6 @@
     });
     window.addEventListener('mouseup', endDrag);
 
-    // 替換舊的日期切換按鈕入口
     window.goToToday = function() { 
       window.forceSaveEdits(); 
       currentDate = new Date(); 
@@ -1616,6 +1738,11 @@
 
     // ★ 修改：加入 target 參數，讓渲染器可以指定畫在表層還是底層
     function renderCalendar(dateObj, suffix = '') {
+      // 只有渲染主層(表層)時，才進行整體網站主題色切換
+      if (suffix === '') {
+        updateThemeForDate(dateObj);
+      }
+
       const year = dateObj.getFullYear(), month = dateObj.getMonth() + 1, date = dateObj.getDate();
       const day = dateObj.getDay(), weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
       const dateKey = getDateKey(dateObj);
@@ -1729,56 +1856,64 @@
 
       document.getElementById('input-title').value = appSettings.title;
       document.getElementById('input-footer').value = appSettings.footer;
-      document.getElementById('input-theme-a').value = appSettings.themeA || '#0d47a1';
-      document.getElementById('input-theme-b').value = appSettings.themeB || '#d81b24';
-      document.getElementById('input-theme-c').value = appSettings.themeC || '#2e7d32';
       
-      document.getElementById('input-theme-a').disabled = isGuest;
-      document.getElementById('input-theme-b').disabled = isGuest;
-      document.getElementById('input-theme-c').disabled = isGuest;
-      document.getElementById('guest-color-hint').style.display = isGuest ? 'block' : 'none';
-
+      // ★ 載入自動節氣配色開關狀態，並觸發 UI 更新
+      document.getElementById('input-auto-theme').checked = !!appSettings.autoTheme;
+      window.toggleAutoTheme();
+      
       const unlockSection = document.getElementById('unlock-section');
       const pwdArea = document.getElementById('password-management-area');
       const txtArea = document.getElementById('text-management-area');
       const btnUpload = document.getElementById('btn-txt-upload');
       const btnExport = document.getElementById('btn-txt-export');
 
-      if (isGuest) {
-        unlockSection.style.display = 'none';
-        pwdArea.style.display = 'none';
-        txtArea.style.display = 'block';
-        
-        btnUpload.disabled = true;
-        btnUpload.style.background = '#ccc';
-        btnUpload.innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px;">lock</span> 從本機上傳文本檔 (試用版鎖定)';
-        btnUpload.style.cursor = 'not-allowed';
-        
-        btnExport.disabled = true;
-        btnExport.style.background = '#ccc';
-        btnExport.innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px;">lock</span> 匯出雲端文本檔 (試用版鎖定)';
-        btnExport.style.cursor = 'not-allowed';
-      } else {
-        document.getElementById('unlock-pwd').value = '';
-        unlockSection.style.display = 'block';
-        pwdArea.style.display = 'none';
-        txtArea.style.display = 'none';
-        
-        btnUpload.disabled = false;
-        btnUpload.style.background = '#ff9800';
-        btnUpload.innerHTML = '<span class="material-icons-outlined">upload_file</span> 從本機上傳文本檔 (.txt)';
-        btnUpload.style.cursor = 'pointer';
-        
-        btnExport.disabled = false;
-        btnExport.style.background = '#4caf50';
-        btnExport.innerHTML = '<span class="material-icons-outlined">sim_card_download</span> 匯出雲端文本檔 (.txt)';
-        btnExport.style.cursor = 'pointer';
-      }
+      document.getElementById('unlock-pwd').value = '';
+      unlockSection.style.display = 'block';
+      pwdArea.style.display = 'none';
+      txtArea.style.display = 'none';
+      
+      btnUpload.disabled = false;
+      btnUpload.style.background = '#ff9800';
+      btnUpload.innerHTML = '<span class="material-icons-outlined">upload_file</span> 從本機上傳文本檔 (.txt)';
+      btnUpload.style.cursor = 'pointer';
+      
+      btnExport.disabled = false;
+      btnExport.style.background = '#4caf50';
+      btnExport.innerHTML = '<span class="material-icons-outlined">sim_card_download</span> 匯出雲端文本檔 (.txt)';
+      btnExport.style.cursor = 'pointer';
       
       document.getElementById('settings-modal').classList.add('show');
     };
     
     window.closeSettings = function() { document.getElementById('settings-modal').classList.remove('show'); };
+    
+    // ★ 新增：處理自動節氣配色的開關邏輯
+    window.toggleAutoTheme = function(checkboxEl) {
+      const checkbox = checkboxEl || document.getElementById('input-auto-theme');
+      const isAuto = checkbox.checked;
+      const isGuest = (userId === 'guest_demo_public');
+      
+      // 若開啟自動配色，或是試用者身份，均鎖定調色盤
+      const disableColors = isAuto || isGuest;
+      document.getElementById('input-theme-a').disabled = disableColors;
+      document.getElementById('input-theme-b').disabled = disableColors;
+      document.getElementById('input-theme-c').disabled = disableColors;
+      
+      document.getElementById('guest-color-hint').style.display = (isGuest && !isAuto) ? 'block' : 'none';
+      
+      if (isAuto) {
+         // 開啟時，調色盤顯示當下節氣預覽色
+         const termTheme = getThemeForDate(currentDate);
+         document.getElementById('input-theme-a').value = termTheme.A;
+         document.getElementById('input-theme-b').value = termTheme.B;
+         document.getElementById('input-theme-c').value = termTheme.C;
+      } else {
+         // 關閉時，恢復顯示用戶先前自訂儲存的顏色
+         document.getElementById('input-theme-a').value = appSettings.themeA || '#0d47a1';
+         document.getElementById('input-theme-b').value = appSettings.themeB || '#d81b24';
+         document.getElementById('input-theme-c').value = appSettings.themeC || '#2e7d32';
+      }
+    };
     
     window.unlockAdvanced = function() {
       const pwd = document.getElementById('unlock-pwd').value;
@@ -1808,7 +1943,6 @@
       
       currentCloudPassword = newPwd;
       appSettings.password = newPwd; 
-      localStorage.setItem('calendar_auth_pwd', newPwd); 
       saveToCloud(); 
       
       alert("密碼修改成功！未來登入請使用此新密碼。");
@@ -1819,9 +1953,14 @@
     window.saveSettings = function() {
       appSettings.title = document.getElementById('input-title').value || '平安喜樂';
       appSettings.footer = document.getElementById('input-footer').value || '無備忘錄';
-      appSettings.themeA = document.getElementById('input-theme-a').value;
-      appSettings.themeB = document.getElementById('input-theme-b').value;
-      appSettings.themeC = document.getElementById('input-theme-c').value;
+      
+      // ★ 儲存自動配色的開關狀態，只有在關閉時才儲存手動顏色
+      appSettings.autoTheme = document.getElementById('input-auto-theme').checked;
+      if (!appSettings.autoTheme) {
+        appSettings.themeA = document.getElementById('input-theme-a').value;
+        appSettings.themeB = document.getElementById('input-theme-b').value;
+        appSettings.themeC = document.getElementById('input-theme-c').value;
+      }
       
       saveToCloud(); 
       applySettings();
@@ -1830,10 +1969,7 @@
     
     function applySettings() {
       document.getElementById('display-title').innerText = appSettings.title;
-      document.documentElement.style.setProperty('--theme-a', appSettings.themeA || '#0d47a1');
-      document.documentElement.style.setProperty('--theme-b', appSettings.themeB || '#d81b24');
-      document.documentElement.style.setProperty('--theme-c', appSettings.themeC || '#2e7d32');
-      document.getElementById('meta-theme-color').content = appSettings.themeB || '#d81b24';
+      // 顏色樣式的處理已完全移交給 updateThemeForDate() 結合 renderCalendar
       renderCalendar(currentDate);
     }
 
